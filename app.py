@@ -135,7 +135,6 @@ def settings():
     roles = Role.query.all()
     current_settings = {
         'org_name': db.session.get(AppSetting, 'org_name'),
-        'github_link': db.session.get(AppSetting, 'github_link'),
         'theme_color': db.session.get(AppSetting, 'theme_color')
     }
     return render_template('settings.html', roles=roles, settings=current_settings)
@@ -143,10 +142,9 @@ def settings():
 @app.route('/settings/update_app', methods=['POST'])
 def update_app_settings():
     name = request.form.get('org_name')
-    github = request.form.get('github_link')
     theme = request.form.get('theme_color')
 
-    for key, val in [('org_name', name), ('github_link', github), ('theme_color', theme)]:
+    for key, val in [('org_name', name), ('theme_color', theme)]:
         setting = db.session.get(AppSetting, key)
         
         if not setting:
