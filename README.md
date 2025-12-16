@@ -65,7 +65,6 @@
 
 ## Development Status
 
-**Current Version: v2.1.0**
 This project is currently in the **Development Phase**. Features may change, and the database schema is subject to updates.
 
 ## Author
