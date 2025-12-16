@@ -12,13 +12,13 @@
 * **Report Generation:** One-click generation of professional, printer-friendly Minutes of the Meeting.
 * **Customizable:** Set your Organization Name, Logo, and System Theme (Color Palette) via Settings.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Backend:** Python (Flask)
 * **Database:** SQLite (via Flask-SQLAlchemy)
 * **Frontend:** HTML5, CSS3, Bootstrap 5 (Static/Local)
 
-## 📦 Installation & Setup
+## Installation & Setup
 
 1.  **Clone the repository**
     ```bash
@@ -63,12 +63,12 @@ ForceRex
 5.  **Log:** Use the **Motions** and **Minutes Log** tabs to record the proceedings.
 6.  **Report:** Click **Generate Minutes** to get a clean PDF-ready version of the events.
 
-## ⚠️ Development Status
+## Development Status
 
 **Current Version: v2.1.0**
 This project is currently in the **Development Phase**. Features may change, and the database schema is subject to updates.
 
-## 👤 Author
+## Author
 
 Designed and developed by Rexvictor (felexion).
 Repository: [felexion/quorum](https://github.com/felexion/quorum)
