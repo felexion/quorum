@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">Application Settings</div>
+            <div class="card-body">
+                <form action="/settings/update_app" method="POST" enctype="multipart/form-data">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Organization Name</label>
+                        <input type="text" name="org_name" class="form-control" value="{{ settings.org_name.value if settings.org_name else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">GitHub Repository Link</label>
+                        <input type="url" name="github_link" class="form-control" value="{{ settings.github_link.value if settings.github_link else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Organization Logo (Square)</label>
+                        <input type="file" name="org_logo" class="form-control" accept="image/*">
+                        <small class="text-muted">Will be resized to 50x50px automatically.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">System Theme</label>
+                        <select name="theme_color" class="form-select" onchange="this.style.backgroundColor=this.options[this.selectedIndex].style.backgroundColor; this.style.color='white';">
+                            <option value="#dc3545" style="background-color: #dc3545;">Red</option>
+                            <option value="#fd7e14" style="background-color: #fd7e14;">Orange</option>
+                            <option value="#ffc107" style="background-color: #ffc107; color:black;">Yellow</option>
+                            <option value="#198754" style="background-color: #198754;">Green</option>
+                            <option value="#0d6efd" style="background-color: #0d6efd;">Blue</option>
+                            <option value="#6f42c1" style="background-color: #6f42c1;">Purple</option>
+                            <option value="#d63384" style="background-color: #d63384;">Pink</option>
+                            <option value="#6610f2" style="background-color: #6610f2;">Indigo</option>
+                            <option value="#4c0bce" style="background-color: #4c0bce;">Violet</option>
+                            <option value="#795548" style="background-color: #795548;">Brown</option>
+                            <option value="#6c757d" style="background-color: #6c757d;">Gray</option>
+                            <option value="#000000" style="background-color: #000000;">Black</option>
+                            <option value="#343a40" style="background-color: #343a40;">Charcoal</option>
+                        </select>
+                        <small class="text-muted">Select your organization's primary color.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">Save Appearance</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">Member Roles</div>
+            <div class="card-body">
+                <form action="/settings/add_role" method="POST" class="d-flex mb-4">
+                    <input type="text" name="role_name" class="form-control me-2" placeholder="e.g. Scribe" required>
+                    <button type="submit" class="btn btn-secondary">Add</button>
+                </form>
+                <ul class="list-group">
+                    {% for role in roles %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ role.name }}
+                        <a href="/settings/delete_role/{{ role.id }}" class="text-danger fw-bold text-decoration-none">&times;</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                Schedule Meeting
+            </div>
+            <div class="card-body">
+                <form action="/meetings/add" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Meeting Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. October Assembly" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Date & Time</label>
+                        <input type="datetime-local" name="date" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="meeting_type" class="form-select">
+                            <option value="Regular">Regular</option>
+                            <option value="Special">Special</option>
+                            <option value="General Assembly">General Assembly</option>
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" class="form-control" placeholder="Conference Room A">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quorum Required (Count)</label>
+                        <input type="number" name="quorum_required" class="form-control" value="0">
+                        <small class="text-muted">Set to 0 if not applicable</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Initial Agenda</label>
+                        <textarea name="initial_agenda" class="form-control" rows="4" placeholder="Call to Order&#10;Approval of Minutes&#10;Old Business&#10;New Business"></textarea>
+                        <small class="text-muted">Enter one item per line.</small>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">Create Meeting</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <strong>Upcoming Meetings</strong>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for meeting in meetings %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('meeting_details', meeting_id=meeting.id) }}" class="text-decoration-none text-dark w-100">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ meeting.title }}</h5>
+                            <small class="text-muted">{{ meeting.date.strftime('%b %d, %Y %I:%M %p') }}</small>
+                        </div>
+                        <p class="mb-1">
+                            <span class="badge bg-secondary">{{ meeting.meeting_type }}</span>
+                            <small class="text-muted"> @ {{ meeting.location }}</small>
+                        </p>
+                    </a>
+                    
+                    <a href="/meetings/delete/{{ meeting.id }}" class="btn btn-sm btn-outline-danger ms-3" onclick="return confirm('Permanently delete this meeting and all its logs?')">
+                        🗑️
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    No meetings scheduled yet.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
