@@ -354,6 +354,26 @@ def generate_report(meeting_id):
                            attendance_map=attendance_map, present_count=present_count, quorum_met=quorum_met,
                            agenda_items=agenda_items, general_motions=general_motions, general_statements=general_statements)
 
+# --- ROLE MANAGEMENT ROUTES ---
+
+@app.route('/settings/add_role', methods=['POST'])
+def add_role():
+    role_name = request.form.get('role_name')
+    # Check if name exists and isn't empty
+    if role_name and not Role.query.filter_by(name=role_name).first():
+        db.session.add(Role(name=role_name))
+        db.session.commit()
+    return redirect(url_for('settings'))
+
+@app.route('/settings/delete_role/<int:id>')
+def delete_role(id):
+    # We use db.session.get for specific IDs
+    role = db.session.get(Role, id)
+    if role:
+        db.session.delete(role)
+        db.session.commit()
+    return redirect(url_for('settings'))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

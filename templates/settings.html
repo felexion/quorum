@@ -21,20 +21,29 @@
 
                     <div class="mb-3">
                         <label class="form-label">System Theme</label>
-                        <select name="theme_color" class="form-select" onchange="this.style.backgroundColor=this.options[this.selectedIndex].style.backgroundColor; this.style.color='white';">
-                            <option value="#dc3545" style="background-color: #dc3545;">Red</option>
-                            <option value="#fd7e14" style="background-color: #fd7e14;">Orange</option>
-                            <option value="#ffc107" style="background-color: #ffc107; color:black;">Yellow</option>
-                            <option value="#198754" style="background-color: #198754;">Green</option>
-                            <option value="#0d6efd" style="background-color: #0d6efd;">Blue</option>
-                            <option value="#6f42c1" style="background-color: #6f42c1;">Purple</option>
-                            <option value="#d63384" style="background-color: #d63384;">Pink</option>
-                            <option value="#6610f2" style="background-color: #6610f2;">Indigo</option>
-                            <option value="#4c0bce" style="background-color: #4c0bce;">Violet</option>
-                            <option value="#795548" style="background-color: #795548;">Brown</option>
-                            <option value="#6c757d" style="background-color: #6c757d;">Gray</option>
-                            <option value="#000000" style="background-color: #000000;">Black</option>
-                            <option value="#343a40" style="background-color: #343a40;">Charcoal</option>
+                        
+                        {% set current_theme = (settings.theme_color.value if settings.theme_color else '#0d6efd') | lower %}
+                        
+                        {% set text_color = 'black' if current_theme == '#ffc107' else 'white' %}
+
+                        <select name="theme_color" class="form-select" 
+                            onchange="this.style.backgroundColor=this.options[this.selectedIndex].style.backgroundColor; this.style.color=this.options[this.selectedIndex].style.color;" 
+                            style="background-color: {{ current_theme }}; color: {{ text_color }};">
+                            
+                            <option value="#dc3545" style="background-color: #dc3545; color: white;" {% if current_theme == '#dc3545' %}selected{% endif %}>Red</option>
+                            <option value="#fd7e14" style="background-color: #fd7e14; color: white;" {% if current_theme == '#fd7e14' %}selected{% endif %}>Orange</option>
+                            <option value="#ffc107" style="background-color: #ffc107; color: black;" {% if current_theme == '#ffc107' %}selected{% endif %}>Yellow</option>
+                            <option value="#198754" style="background-color: #198754; color: white;" {% if current_theme == '#198754' %}selected{% endif %}>Green</option>
+                            <option value="#0d6efd" style="background-color: #0d6efd; color: white;" {% if current_theme == '#0d6efd' %}selected{% endif %}>Blue (Default)</option>
+                            <option value="#6f42c1" style="background-color: #6f42c1; color: white;" {% if current_theme == '#6f42c1' %}selected{% endif %}>Purple</option>
+                            <option value="#d63384" style="background-color: #d63384; color: white;" {% if current_theme == '#d63384' %}selected{% endif %}>Pink</option>
+                            <option value="#6610f2" style="background-color: #6610f2; color: white;" {% if current_theme == '#6610f2' %}selected{% endif %}>Indigo</option>
+                            <option value="#4c0bce" style="background-color: #4c0bce; color: white;" {% if current_theme == '#4c0bce' %}selected{% endif %}>Violet</option>
+                            <option value="#795548" style="background-color: #795548; color: white;" {% if current_theme == '#795548' %}selected{% endif %}>Brown</option>
+                            <option value="#6c757d" style="background-color: #6c757d; color: white;" {% if current_theme == '#6c757d' %}selected{% endif %}>Gray</option>
+                            <option value="#000000" style="background-color: #000000; color: white;" {% if current_theme == '#000000' %}selected{% endif %}>Black</option>
+                            <option value="#343a40" style="background-color: #343a40; color: white;" {% if current_theme == '#343a40' %}selected{% endif %}>Charcoal</option>
+                        
                         </select>
                         <small class="text-muted">Select your organization's primary color.</small>
                     </div>
@@ -57,7 +66,7 @@
                     {% for role in roles %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         {{ role.name }}
-                        <a href="/settings/delete_role/{{ role.id }}" class="text-danger fw-bold text-decoration-none">&times;</a>
+                        <a href="/settings/delete_role/{{ role.id }}" class="text-danger fw-bold text-decoration-none" onclick="return confirm('Delete this role?')">&times;</a>
                     </li>
                     {% endfor %}
                 </ul>
