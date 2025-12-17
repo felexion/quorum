@@ -104,42 +104,61 @@
         </tbody>
     </table>
 
-    <div class="section-title">II. ORDER OF BUSINESS & MOTIONS</div>
-    {% for motion in motions %}
-    <div class="motion-box">
-        <strong>Motion:</strong> "{{ motion.text }}"<br>
-        <span style="font-size: 13px;">
-            Proposed by: 
-            {% for m in members %}{% if m.id == motion.proposer_id %}{{ m.last_name }}{% endif %}{% endfor %}
-            | Seconded by: 
-            {% for m in members %}{% if m.id == motion.seconder_id %}{{ m.last_name }}{% endif %}{% endfor %}
-        </span><br>
-        Result: 
-        <span class="{{ 'status-passed' if motion.status == 'Passed' else 'status-failed' }}">
-            {{ motion.status.upper() }}
-        </span> 
-        (Votes: {{ motion.vote_results }})
-    </div>
-    {% else %}
-    <p>No motions were recorded.</p>
+    <div class="section-title">II. BUSINESS OF THE DAY</div>
+
+    {% for section in report_data %}
+        <h3 style="margin-top: 20px; border-bottom: 1px dashed #ccc;">{{ loop.index }}. {{ section.title }}</h3>
+        
+        {% for event in section.events %}
+            
+            {% if event.type == 'motion' %}
+                <div class="motion-box" style="margin-top: 10px; margin-bottom: 10px;">
+                    <strong>Motion:</strong> "{{ event.obj.text }}"<br>
+                    <span style="font-size: 13px;">
+                        Result: 
+                        <span class="{{ 'status-passed' if event.obj.status == 'Passed' else 'status-failed' }}">
+                            {{ event.obj.status.upper() }}
+                        </span> 
+                        (Votes: {{ event.obj.vote_results }})
+                    </span>
+                </div>
+            
+            {% elif event.type == 'statement' %}
+                <div style="margin-bottom: 5px; font-size: 13px; margin-left: 15px; border-left: 2px solid #eee; padding-left: 10px;">
+                    <span class="timestamp">[{{ event.time.strftime('%H:%M') }}]</span>
+                    <strong>
+                        {% for m in members %}
+                            {% if m.id == event.obj.speaker_id %}{{ m.last_name }}{% endif %}
+                        {% endfor %}:
+                    </strong> 
+                    {{ event.obj.content }}
+                </div>
+            {% endif %}
+
+        {% else %}
+            <p style="font-style: italic; color: #666;">No minutes recorded for this item.</p>
+        {% endfor %}
+
     {% endfor %}
 
-    <div class="section-title">III. DISCUSSION LOG</div>
-    <ul style="list-style-type: none; padding-left: 0;">
-        {% for stmt in statements %}
-        <li style="margin-bottom: 8px;">
-            <span class="timestamp">[{{ stmt.timestamp.strftime('%H:%M') }}]</span>
-            <strong>
-                {% for m in members %}
-                    {% if m.id == stmt.speaker_id %}{{ m.last_name }}{% endif %}
-                {% endfor %}:
-            </strong> 
-            {{ stmt.content }}
-        </li>
-        {% else %}
-        <li>No statements recorded.</li>
+    {% if other_events %}
+    <div class="section-title">III. OTHER MATTERS</div>
+        {% for event in other_events %}
+            {% if event.type == 'motion' %}
+                <div class="motion-box">
+                    Motion: "{{ event.obj.text }}" ({{ event.obj.status }})
+                </div>
+            {% elif event.type == 'statement' %}
+                <div style="margin-bottom: 5px; font-size: 13px;">
+                    <strong>
+                        {% for m in members %}
+                            {% if m.id == event.obj.speaker_id %}{{ m.last_name }}{% endif %}
+                        {% endfor %}:
+                    </strong> {{ event.obj.content }}
+                </div>
+            {% endif %}
         {% endfor %}
-    </ul>
+    {% endif %}
 
     <div style="margin-top: 50px; display: flex; justify-content: space-between;">
         <div style="width: 40%; text-align: center;">

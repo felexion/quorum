@@ -101,7 +101,7 @@
                         <form action="/meeting/{{ meeting.id }}/motion" method="POST">
                             <textarea name="text" class="form-control mb-2" rows="2" placeholder="Describe the motion..." required></textarea>
                             
-                            <select name="agenda_item_id" class="form-select form-select-sm mb-2 text-primary fw-bold">
+                            <select name="agenda_item_id" id="motionAgendaSelect" class="form-select form-select-sm mb-2 text-primary fw-bold">
                                 <option value="">(General / No Specific Agenda Item)</option>
                                 {% for item in agenda_items %}
                                 <option value="{{ item.id }}">Re: {{ item.title }}</option>
@@ -141,8 +141,7 @@
                     </div>
                 </div>
 
-                <div style="max-height: 400px; overflow-y: auto;">
-                    {% for motion in motions %}
+                <div> {% for motion in motions %}
                     <div class="card mb-2 border-start border-4 {{ 'border-success' if motion.status == 'Passed' else 'border-danger' if motion.status == 'Failed' else 'border-warning' }}">
                         <div class="card-body p-2 position-relative">
                             <a href="/motion/delete/{{ motion.id }}" class="position-absolute top-0 end-0 p-2 text-danger text-decoration-none" onclick="return confirm('Delete?')">&times;</a>
@@ -165,7 +164,7 @@
 
             <div class="tab-pane fade" id="minutes">
                 <form action="/meeting/{{ meeting.id }}/statement" method="POST" class="mb-3">
-                    <select name="agenda_item_id" class="form-select form-select-sm mb-2 text-primary fw-bold">
+                    <select name="agenda_item_id" id="minutesAgendaSelect" class="form-select form-select-sm mb-2 text-primary fw-bold">
                         <option value="">(General Discussion)</option>
                         {% for item in agenda_items %}
                         <option value="{{ item.id }}">Re: {{ item.title }}</option>
@@ -182,8 +181,7 @@
                     <button class="btn btn-sm btn-secondary w-100 mt-1">Log</button>
                 </form>
 
-                <div style="max-height: 400px; overflow-y: auto;">
-                    {% for stmt in statements %}
+                <div> {% for stmt in statements %}
                     <div class="mb-2 position-relative">
                         <small class="text-muted d-block">
                             {{ stmt.timestamp.strftime('%H:%M') }} 
@@ -202,6 +200,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // 1. Restore Active Tab
         var activeTabId = localStorage.getItem('activeMeetingTab');
         if (activeTabId) {
             var tabButton = document.querySelector(activeTabId);
@@ -211,6 +210,26 @@
             btn.addEventListener('shown.bs.tab', function(event) {
                 localStorage.setItem('activeMeetingTab', '#' + event.target.id);
             });
+        });
+
+        // 2. STICKY AGENDA DROPDOWNS
+        // List of dropdown IDs to track
+        const agendaSelects = ['motionAgendaSelect', 'minutesAgendaSelect'];
+
+        agendaSelects.forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                // Restore saved value
+                const savedVal = localStorage.getItem('sticky_' + id);
+                if (savedVal) {
+                    el.value = savedVal;
+                }
+                
+                // Save value on change
+                el.addEventListener('change', function() {
+                    localStorage.setItem('sticky_' + id, this.value);
+                });
+            }
         });
     });
 </script>

@@ -63,12 +63,12 @@ class Motion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     meeting_id = db.Column(db.Integer, db.ForeignKey('meeting.id'), nullable=False)
     agenda_item_id = db.Column(db.Integer, db.ForeignKey('agenda_item.id'))
-    
     proposer_id = db.Column(db.Integer, db.ForeignKey('member.id'))
     seconder_id = db.Column(db.Integer, db.ForeignKey('member.id'))
     text = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='Pending')
     vote_results = db.Column(db.String(100))
+    timestamp = db.Column(db.DateTime, default=datetime.now)
 
 class Statement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -337,22 +337,59 @@ def delete_statement(id):
 
 @app.route('/meeting/<int:meeting_id>/report')
 def generate_report(meeting_id):
-    meeting = Meeting.query.get_or_404(meeting_id)
+    meeting = db.session.get(Meeting, meeting_id)
     all_members = Member.query.all()
+    
+    # Attendance Data
     attendance_records = Attendance.query.filter_by(meeting_id=meeting_id).all()
     attendance_map = {att.member_id: att.status for att in attendance_records}
     present_count = sum(1 for status in attendance_map.values() if status == 'Present')
     quorum_met = present_count >= meeting.quorum_required
     
-    # We pass raw lists, grouping happens in HTML for simplicity or via a smart loop
+    # Get all Agenda Items
     agenda_items = AgendaItem.query.filter_by(meeting_id=meeting_id).all()
-    # Helper: Get motions/statements that have NO agenda link
-    general_motions = Motion.query.filter_by(meeting_id=meeting_id, agenda_item_id=None).all()
-    general_statements = Statement.query.filter_by(meeting_id=meeting_id, agenda_item_id=None).order_by(Statement.timestamp).all()
+    
+    # Build a structured list for the report
+    report_data = []
+    
+    for item in agenda_items:
+        # Get motions and statements for THIS agenda item
+        item_motions = Motion.query.filter_by(agenda_item_id=item.id).all()
+        item_statements = Statement.query.filter_by(agenda_item_id=item.id).all()
+        
+        # Combine them into a single list
+        mixed_events = []
+        for m in item_motions:
+            mixed_events.append({'type': 'motion', 'obj': m, 'time': m.timestamp})
+        for s in item_statements:
+            mixed_events.append({'type': 'statement', 'obj': s, 'time': s.timestamp})
+            
+        # Sort by timestamp
+        mixed_events.sort(key=lambda x: x['time'] or datetime.min)
+        
+        report_data.append({
+            'title': item.title,
+            'events': mixed_events
+        })
 
-    return render_template('report.html', meeting=meeting, members=all_members, 
-                           attendance_map=attendance_map, present_count=present_count, quorum_met=quorum_met,
-                           agenda_items=agenda_items, general_motions=general_motions, general_statements=general_statements)
+    # Handle "Other Matters" (Items with NO agenda link)
+    other_motions = Motion.query.filter_by(meeting_id=meeting_id, agenda_item_id=None).all()
+    other_statements = Statement.query.filter_by(meeting_id=meeting_id, agenda_item_id=None).all()
+    other_events = []
+    for m in other_motions:
+        other_events.append({'type': 'motion', 'obj': m, 'time': m.timestamp})
+    for s in other_statements:
+        other_events.append({'type': 'statement', 'obj': s, 'time': s.timestamp})
+    other_events.sort(key=lambda x: x['time'] or datetime.min)
+
+    return render_template('report.html', 
+                           meeting=meeting, 
+                           members=all_members, 
+                           attendance_map=attendance_map,
+                           present_count=present_count,
+                           quorum_met=quorum_met,
+                           report_data=report_data,
+                           other_events=other_events)
 
 # --- ROLE MANAGEMENT ROUTES ---
 
