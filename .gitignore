@@ -7,3 +7,6 @@ static/uploads/*
 *.db
 *.pyc
 .DS_Store
+build/
+dist/
+*.spec
