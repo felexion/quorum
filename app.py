@@ -1,12 +1,23 @@
 import os
+import sys
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quorum.db'
+
+if getattr(sys, 'frozen', False):
+    # Running as executable
+    base_dir = os.path.dirname(sys.executable)
+else:
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+
+db_path = os.path.join(base_dir, 'quorum.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
 
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
