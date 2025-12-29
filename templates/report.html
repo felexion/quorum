@@ -60,6 +60,11 @@
 </head>
 <body>
 
+    {% set member_lookup = {} %}
+    {% for m in members %}
+        {% set _ = member_lookup.update({m.id: m}) %}
+    {% endfor %}
+
     <div class="no-print" style="margin-bottom: 20px; text-align: right;">
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">🖨️ Print / Save to PDF</button>
         <a href="/meeting/{{ meeting.id }}" style="margin-left: 10px;">Back to Dashboard</a>
@@ -94,10 +99,10 @@
             </tr>
         </thead>
         <tbody>
-            {% for member in members %}
+            {% for member in members|sort(attribute='last_name') %}
             <tr>
                 <td>{{ member.last_name }}, {{ member.first_name }}</td>
-                <td>{{ member.primary_role }}</td>
+                <td>{{ member.primary_role or '—' }}</td>
                 <td>{{ attendance_map.get(member.id, 'Absent') }}</td>
             </tr>
             {% endfor %}
@@ -116,21 +121,22 @@
                     <strong>Motion:</strong> "{{ event.obj.text }}"<br>
                     <span style="font-size: 13px;">
                         Result: 
-                        <span class="{{ 'status-passed' if event.obj.status == 'Passed' else 'status-failed' }}">
-                            {{ event.obj.status.upper() }}
-                        </span> 
-                        (Votes: {{ event.obj.vote_results }})
+                        {% set status_upper = (event.obj.status or 'Pending')|upper %}
+                        <span class="{{ 'status-passed' if status_upper == 'PASSED' else 'status-failed' if status_upper == 'FAILED' else '' }}">
+                            {{ status_upper }}
+                        </span>
+                        {% if event.obj.vote_results %}
+                            (Votes: {{ event.obj.vote_results }})
+                        {% endif %}
                     </span>
                 </div>
             
             {% elif event.type == 'statement' %}
                 <div style="margin-bottom: 5px; font-size: 13px; margin-left: 15px; border-left: 2px solid #eee; padding-left: 10px;">
-                    <span class="timestamp">[{{ event.time.strftime('%H:%M') }}]</span>
-                    <strong>
-                        {% for m in members %}
-                            {% if m.id == event.obj.speaker_id %}{{ m.last_name }}{% endif %}
-                        {% endfor %}:
-                    </strong> 
+                    {% set ts = event.time or event.obj.timestamp %}
+                    {% if ts %}<span class="timestamp">[{{ ts.strftime('%H:%M') }}]</span>{% endif %}
+                    {% set speaker = member_lookup.get(event.obj.speaker_id) %}
+                    <strong>{{ speaker.last_name if speaker else 'Speaker' }}:</strong> 
                     {{ event.obj.content }}
                 </div>
             {% endif %}
@@ -146,15 +152,15 @@
         {% for event in other_events %}
             {% if event.type == 'motion' %}
                 <div class="motion-box">
-                    Motion: "{{ event.obj.text }}" ({{ event.obj.status }})
+                    <strong>Motion:</strong> "{{ event.obj.text }}"<br>
+                    <small>Status: {{ (event.obj.status or 'Pending') }}{% if event.obj.vote_results %} | Votes: {{ event.obj.vote_results }}{% endif %}</small>
                 </div>
             {% elif event.type == 'statement' %}
+                {% set speaker = member_lookup.get(event.obj.speaker_id) %}
+                {% set ts = event.time or event.obj.timestamp %}
                 <div style="margin-bottom: 5px; font-size: 13px;">
-                    <strong>
-                        {% for m in members %}
-                            {% if m.id == event.obj.speaker_id %}{{ m.last_name }}{% endif %}
-                        {% endfor %}:
-                    </strong> {{ event.obj.content }}
+                    {% if ts %}<span class="timestamp">[{{ ts.strftime('%H:%M') }}]</span>{% endif %}
+                    <strong>{{ speaker.last_name if speaker else 'Speaker' }}:</strong> {{ event.obj.content }}
                 </div>
             {% endif %}
         {% endfor %}

@@ -33,7 +33,7 @@
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if org_logo %}
-                <img src="{{ url_for('static', filename='uploads/' + org_logo) }}" alt="Logo" width="50" height="50" class="rounded me-3 object-fit-cover">
+                <img src="{{ url_for('uploaded_file', filename=org_logo) }}" alt="Logo" width="50" height="50" class="rounded me-3 object-fit-cover">
                 {% else %}
                 <div class="rounded me-3 d-flex align-items-center justify-content-center text-white fw-bold" style="width:50px; height:50px; background-color: var(--theme-main);">Q</div>
                 {% endif %}

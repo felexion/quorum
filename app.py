@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -8,22 +8,32 @@ from datetime import datetime
 app = Flask(__name__)
 
 if getattr(sys, 'frozen', False):
-    # Running as executable
-    base_dir = os.path.dirname(sys.executable)
+    app_root = os.path.dirname(sys.executable)
 else:
-    base_dir = os.path.abspath(os.path.dirname(__file__))
+    app_root = os.path.abspath(os.path.dirname(__file__))
 
-db_path = os.path.join(base_dir, 'quorum.db')
+def resolve_data_dir():
+    if getattr(sys, 'frozen', False) and sys.platform.startswith('linux'):
+        xdg_home = os.environ.get('XDG_DATA_HOME', os.path.join(os.path.expanduser('~'), '.local', 'share'))
+        return os.path.join(xdg_home, 'quorum')
+    return app_root
+
+data_dir = resolve_data_dir()
+os.makedirs(data_dir, exist_ok=True)
+
+db_path = os.path.join(data_dir, 'quorum.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-
-
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = os.path.join(data_dir, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 db = SQLAlchemy(app)
+
+# Ensure tables exist regardless of how the server is started (python app.py, flask run, or packaged)
+with app.app_context():
+    db.create_all()
 
 # --- MODELS ---
 
@@ -92,6 +102,16 @@ class Statement(db.Model):
 class AppSetting(db.Model):
     key = db.Column(db.String(50), primary_key=True)
     value = db.Column(db.String(255))
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    upload_dir = app.config['UPLOAD_FOLDER']
+    if os.path.exists(os.path.join(upload_dir, filename)):
+        return send_from_directory(upload_dir, filename)
+    legacy_dir = os.path.join(app_root, 'static', 'uploads')
+    if os.path.exists(os.path.join(legacy_dir, filename)):
+        return send_from_directory(legacy_dir, filename)
+    return ("", 404)
 
 @app.context_processor
 def inject_settings():
@@ -348,7 +368,7 @@ def delete_statement(id):
 
 @app.route('/meeting/<int:meeting_id>/report')
 def generate_report(meeting_id):
-    meeting = db.session.get(Meeting, meeting_id)
+    meeting = Meeting.query.get_or_404(meeting_id)
     all_members = Member.query.all()
     
     # Attendance Data
