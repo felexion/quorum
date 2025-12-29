@@ -11,7 +11,7 @@
                 <form action="/meetings/add" method="POST">
                     <div class="mb-3">
                         <label class="form-label">Meeting Title</label>
-                        <input type="text" name="title" class="form-control" placeholder="e.g. October Assembly" required>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. First Regular Meeting" required>
                     </div>
                     
                     <div class="mb-3">
@@ -30,7 +30,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Location</label>
-                        <input type="text" name="location" class="form-control" placeholder="Conference Room A">
+                        <input type="text" name="location" class="form-control" placeholder="Audio-Visual Room">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Quorum Required (Count)</label>
@@ -53,7 +53,7 @@
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header bg-white">
-                <strong>Upcoming Meetings</strong>
+                <strong>Meetings</strong>
             </div>
             <div class="list-group list-group-flush">
                 {% for meeting in meetings %}
