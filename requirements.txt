@@ -1,5 +1,2 @@
 Flask>=2.3,<3.1
 Flask-SQLAlchemy>=3.1,<4.0
-pywebview>=4.4,<5.0
-# PyInstaller does not yet support Python 3.13; install only when packaging on Python <=3.12
-pyinstaller>=6.10 ; python_version < '3.13'

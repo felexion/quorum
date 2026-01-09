@@ -1,75 +1,86 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-6">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-primary text-white">Application Settings</div>
-            <div class="card-body">
-                <form action="/settings/update_app" method="POST" enctype="multipart/form-data">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Organization Name</label>
-                        <input type="text" name="org_name" class="form-control" value="{{ settings.org_name.value if settings.org_name else '' }}">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Organization Logo (Square)</label>
-                        <input type="file" name="org_logo" class="form-control" accept="image/*">
-                        <small class="text-muted">Will be resized to 50x50px automatically.</small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">System Theme</label>
-                        
-                        {% set current_theme = (settings.theme_color.value if settings.theme_color else '#0d6efd') | lower %}
-                        
-                        {% set text_color = 'black' if current_theme == '#ffc107' else 'white' %}
-
-                        <select name="theme_color" class="form-select" 
-                            onchange="this.style.backgroundColor=this.options[this.selectedIndex].style.backgroundColor; this.style.color=this.options[this.selectedIndex].style.color;" 
-                            style="background-color: {{ current_theme }}; color: {{ text_color }};">
-                            
-                            <option value="#dc3545" style="background-color: #dc3545; color: white;" {% if current_theme == '#dc3545' %}selected{% endif %}>Red</option>
-                            <option value="#fd7e14" style="background-color: #fd7e14; color: white;" {% if current_theme == '#fd7e14' %}selected{% endif %}>Orange</option>
-                            <option value="#ffc107" style="background-color: #ffc107; color: black;" {% if current_theme == '#ffc107' %}selected{% endif %}>Yellow</option>
-                            <option value="#198754" style="background-color: #198754; color: white;" {% if current_theme == '#198754' %}selected{% endif %}>Green</option>
-                            <option value="#0d6efd" style="background-color: #0d6efd; color: white;" {% if current_theme == '#0d6efd' %}selected{% endif %}>Blue (Default)</option>
-                            <option value="#6f42c1" style="background-color: #6f42c1; color: white;" {% if current_theme == '#6f42c1' %}selected{% endif %}>Purple</option>
-                            <option value="#d63384" style="background-color: #d63384; color: white;" {% if current_theme == '#d63384' %}selected{% endif %}>Pink</option>
-                            <option value="#6610f2" style="background-color: #6610f2; color: white;" {% if current_theme == '#6610f2' %}selected{% endif %}>Indigo</option>
-                            <option value="#4c0bce" style="background-color: #4c0bce; color: white;" {% if current_theme == '#4c0bce' %}selected{% endif %}>Violet</option>
-                            <option value="#795548" style="background-color: #795548; color: white;" {% if current_theme == '#795548' %}selected{% endif %}>Brown</option>
-                            <option value="#6c757d" style="background-color: #6c757d; color: white;" {% if current_theme == '#6c757d' %}selected{% endif %}>Gray</option>
-                            <option value="#000000" style="background-color: #000000; color: white;" {% if current_theme == '#000000' %}selected{% endif %}>Black</option>
-                            <option value="#343a40" style="background-color: #343a40; color: white;" {% if current_theme == '#343a40' %}selected{% endif %}>Charcoal</option>
-                        
-                        </select>
-                        <small class="text-muted">Select your organization's primary color.</small>
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100">Save Appearance</button>
-                </form>
-            </div>
+<div class="page-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <div class="pill pill-muted">Settings</div>
+            <h3 class="mb-0">Brand the experience</h3>
+            <p class="text-muted mb-0">Update organization details, theme color, and available roles.</p>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-secondary text-white">Member Roles</div>
-            <div class="card-body">
-                <form action="/settings/add_role" method="POST" class="d-flex mb-4">
-                    <input type="text" name="role_name" class="form-control me-2" placeholder="e.g. Scribe" required>
-                    <button type="submit" class="btn btn-secondary">Add</button>
-                </form>
-                <ul class="list-group">
-                    {% for role in roles %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ role.name }}
-                        <a href="/settings/delete_role/{{ role.id }}" class="text-danger fw-bold text-decoration-none" onclick="return confirm('Delete this role?')">&times;</a>
-                    </li>
-                    {% endfor %}
-                </ul>
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-soft border-0">
+                <div class="card-header bg-white">
+                    <strong>Application Settings</strong>
+                </div>
+                <div class="card-body">
+                    <form action="/settings/update_app" method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-3">
+                        <div>
+                            <label class="form-label">Organization Name</label>
+                            <input type="text" name="org_name" class="form-control" value="{{ settings.org_name.value if settings.org_name else '' }}">
+                        </div>
+
+                        <div>
+                            <label class="form-label">Organization Logo (Square)</label>
+                            <input type="file" name="org_logo" class="form-control" accept="image/*">
+                            <small class="text-muted">Will be resized to 50x50px automatically.</small>
+                        </div>
+
+                        <div>
+                            <label class="form-label">System Theme</label>
+                            {% set current_theme = (settings.theme_color.value if settings.theme_color else '#0d6efd') | lower %}
+                            {% set text_color = 'black' if current_theme == '#ffc107' else 'white' %}
+                            <select name="theme_color" class="form-select"
+                                onchange="this.style.backgroundColor=this.options[this.selectedIndex].style.backgroundColor; this.style.color=this.options[this.selectedIndex].style.color;"
+                                style="background-color: {{ current_theme }}; color: {{ text_color }};">
+                                <option value="#dc3545" style="background-color: #dc3545; color: white;" {% if current_theme == '#dc3545' %}selected{% endif %}>Red</option>
+                                <option value="#fd7e14" style="background-color: #fd7e14; color: white;" {% if current_theme == '#fd7e14' %}selected{% endif %}>Orange</option>
+                                <option value="#ffc107" style="background-color: #ffc107; color: black;" {% if current_theme == '#ffc107' %}selected{% endif %}>Yellow</option>
+                                <option value="#198754" style="background-color: #198754; color: white;" {% if current_theme == '#198754' %}selected{% endif %}>Green</option>
+                                <option value="#0d6efd" style="background-color: #0d6efd; color: white;" {% if current_theme == '#0d6efd' %}selected{% endif %}>Blue (Default)</option>
+                                <option value="#6f42c1" style="background-color: #6f42c1; color: white;" {% if current_theme == '#6f42c1' %}selected{% endif %}>Purple</option>
+                                <option value="#d63384" style="background-color: #d63384; color: white;" {% if current_theme == '#d63384' %}selected{% endif %}>Pink</option>
+                                <option value="#6610f2" style="background-color: #6610f2; color: white;" {% if current_theme == '#6610f2' %}selected{% endif %}>Indigo</option>
+                                <option value="#4c0bce" style="background-color: #4c0bce; color: white;" {% if current_theme == '#4c0bce' %}selected{% endif %}>Violet</option>
+                                <option value="#795548" style="background-color: #795548; color: white;" {% if current_theme == '#795548' %}selected{% endif %}>Brown</option>
+                                <option value="#6c757d" style="background-color: #6c757d; color: white;" {% if current_theme == '#6c757d' %}selected{% endif %}>Gray</option>
+                                <option value="#000000" style="background-color: #000000; color: white;" {% if current_theme == '#000000' %}selected{% endif %}>Black</option>
+                                <option value="#343a40" style="background-color: #343a40; color: white;" {% if current_theme == '#343a40' %}selected{% endif %}>Charcoal</option>
+                            </select>
+                            <small class="text-muted">Select your organization's primary color.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Appearance</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-soft border-0 h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <strong>Member Roles</strong>
+                    <span class="text-muted small">{{ roles|length }} roles</span>
+                </div>
+                <div class="card-body">
+                    <form action="/settings/add_role" method="POST" class="d-flex mb-3 gap-2">
+                        <input type="text" name="role_name" class="form-control" placeholder="President, Secretary, Chair" required>
+                        <button type="submit" class="btn btn-outline-primary">Add</button>
+                    </form>
+                    <ul class="list-group">
+                        {% for role in roles %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ role.name }}
+                            <a href="/settings/delete_role/{{ role.id }}" class="text-danger fw-bold text-decoration-none" onclick="return confirm('Delete this role?')">&times;</a>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-center text-muted">No roles yet. Add your first role above.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

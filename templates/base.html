@@ -5,37 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quorum | {{ org_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* DYNAMIC THEME ENGINE */
         :root {
             --theme-main: {{ theme_color }};
+            --ink: #0f172a;
+            --muted: #6c757d;
+            --surface: #ffffff;
+            --surface-alt: #f3f6fb;
+            --border: #e5e7eb;
         }
-        
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Manrope', 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #f7fafc 0%, #eef2f7 100%);
+            color: var(--ink);
+        }
+
         /* Apply theme to Bootstrap elements */
         .bg-primary, .btn-primary { background-color: var(--theme-main) !important; border-color: var(--theme-main) !important; }
         .text-primary { color: var(--theme-main) !important; }
         .btn-outline-primary { color: var(--theme-main) !important; border-color: var(--theme-main) !important; }
-        .btn-outline-primary:hover { background-color: var(--theme-main) !important; color: white !important; }
-        
-        /* Navbar Styling */
-        .navbar { border-bottom: 4px solid var(--theme-main); background: #fff !important; }
+        .btn-outline-primary:hover { background-color: var(--theme-main) !important; color: #fff !important; }
+        a { color: var(--theme-main); }
+        a:hover { color: #0b5ed7; }
+
+        /* Navbar */
+        .navbar { border-bottom: 3px solid var(--theme-main); background: var(--surface) !important; }
         .navbar-brand-text { line-height: 1.1; }
-        .org-name { font-size: 1.1rem; font-weight: bold; color: #333; display: block; }
-        .app-name { font-size: 0.85rem; color: var(--theme-main); letter-spacing: 1px; text-transform: uppercase; display: block; }
-        
-        /* Footer */
-        .footer { margin-top: 50px; padding: 20px 0; background-color: #f8f9fa; border-top: 1px solid #e9ecef; font-size: 0.85rem; }
+        .org-name { font-size: 1.1rem; font-weight: 700; color: var(--ink); display: block; }
+        .app-name { font-size: 0.8rem; color: var(--theme-main); letter-spacing: 1px; text-transform: uppercase; display: block; }
+
+        /* Layout helpers */
+        .page-section { margin-bottom: 1.5rem; }
+        .card { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .card-header { border-bottom: 1px solid var(--border); }
+        .card-quiet { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+        .shadow-soft { box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08); }
+        .pill { padding: 6px 12px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; }
+        .pill-muted { background: var(--surface-alt); color: var(--muted); }
+        .pill-live { background: rgba(25, 135, 84, 0.1); color: #198754; }
+        .pill-finished { background: rgba(13, 110, 253, 0.08); color: #0d6efd; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--ink); }
+        .stat-label { color: var(--muted); font-size: 0.95rem; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(6px); }
+        .list-tile { border: 1px solid var(--border); border-radius: 12px; padding: 12px; transition: all 0.15s ease; background: var(--surface); }
+        .list-tile:hover { box-shadow: 0 12px 30px rgba(0,0,0,0.06); transform: translateY(-1px); }
+        .section-title { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+
+        .footer { margin-top: 60px; padding: 24px 0; background-color: var(--surface); border-top: 1px solid var(--border); font-size: 0.9rem; }
     </style>
 </head>
 <body class="bg-light d-flex flex-column min-vh-100">
 
-    <nav class="navbar navbar-expand-lg shadow-sm mb-4 py-2">
+    <nav class="navbar navbar-expand-lg navbar-light shadow-sm mb-4 py-2">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if org_logo %}
                 <img src="{{ url_for('uploaded_file', filename=org_logo) }}" alt="Logo" width="50" height="50" class="rounded me-3 object-fit-cover">
                 {% else %}
-                <div class="rounded me-3 d-flex align-items-center justify-content-center text-white fw-bold" style="width:50px; height:50px; background-color: var(--theme-main);">Q</div>
+                <img src="{{ url_for('static', filename='quorumlogo.png') }}" alt="Logo" width="50" height="50" class="rounded me-3 object-fit-cover">
                 {% endif %}
                 
                 <div class="navbar-brand-text">
@@ -43,8 +75,11 @@
                     <span class="app-name">Quorum</span>
                 </div>
             </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
             
-            <div class="collapse navbar-collapse">
+            <div class="collapse navbar-collapse" id="navMenu">
                 <ul class="navbar-nav ms-auto fw-bold">
                     <li class="nav-item"><a class="nav-link text-dark" href="/">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link text-dark" href="{{ url_for('meetings') }}">Meetings</a></li>
@@ -56,6 +91,18 @@
     </nav>
 
     <div class="container flex-grow-1">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mt-2">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </div>
 

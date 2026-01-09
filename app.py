@@ -1,31 +1,20 @@
 import os
-import sys
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
+from typing import Dict, Optional, Tuple
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
 app = Flask(__name__)
 
-if getattr(sys, 'frozen', False):
-    app_root = os.path.dirname(sys.executable)
-else:
-    app_root = os.path.abspath(os.path.dirname(__file__))
+app_root = os.path.abspath(os.path.dirname(__file__))
 
-def resolve_data_dir():
-    if getattr(sys, 'frozen', False) and sys.platform.startswith('linux'):
-        xdg_home = os.environ.get('XDG_DATA_HOME', os.path.join(os.path.expanduser('~'), '.local', 'share'))
-        return os.path.join(xdg_home, 'quorum')
-    return app_root
-
-data_dir = resolve_data_dir()
-os.makedirs(data_dir, exist_ok=True)
-
-db_path = os.path.join(data_dir, 'quorum.db')
+db_path = os.path.join(app_root, 'quorum.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.environ.get('QUORUM_SECRET_KEY', 'dev-secret-key')
 
-UPLOAD_FOLDER = os.path.join(data_dir, 'uploads')
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -34,6 +23,42 @@ db = SQLAlchemy(app)
 # Ensure tables exist regardless of how the server is started (python app.py, flask run, or packaged)
 with app.app_context():
     db.create_all()
+
+# --- HELPERS ---
+
+def parse_meeting_date(raw_date: Optional[str]) -> datetime:
+    """Parse ISO datetime input and fall back to now on failure."""
+    if not raw_date:
+        return datetime.now()
+    try:
+        return datetime.strptime(raw_date, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        return datetime.now()
+
+
+def set_setting(key: str, value: Optional[str]) -> None:
+    """Upsert a key/value pair in AppSetting."""
+    if value is None:
+        return
+    existing = db.session.get(AppSetting, key)
+    if existing:
+        existing.value = value
+    else:
+        db.session.add(AppSetting(key=key, value=value))
+
+
+def get_setting(key: str, default: Optional[str] = None) -> Optional[str]:
+    setting = db.session.get(AppSetting, key)
+    return setting.value if setting else default
+
+
+def attendance_summary(meeting_id: int) -> Tuple[Dict[int, str], int, bool]:
+    records = Attendance.query.filter_by(meeting_id=meeting_id).all()
+    summary = {record.member_id: record.status for record in records}
+    present = sum(1 for status in summary.values() if status == 'Present')
+    meeting = Meeting.query.get(meeting_id)
+    quorum_met = present >= (meeting.quorum_required if meeting else 0)
+    return summary, present, quorum_met
 
 # --- MODELS ---
 
@@ -108,25 +133,17 @@ def uploaded_file(filename):
     upload_dir = app.config['UPLOAD_FOLDER']
     if os.path.exists(os.path.join(upload_dir, filename)):
         return send_from_directory(upload_dir, filename)
-    legacy_dir = os.path.join(app_root, 'static', 'uploads')
-    if os.path.exists(os.path.join(legacy_dir, filename)):
-        return send_from_directory(legacy_dir, filename)
     return ("", 404)
 
 @app.context_processor
 def inject_settings():
-    # Fetch settings safely with defaults
-    def get_setting(key, default):
-        item = db.session.get(AppSetting, key) 
-        return item.value if item else default
-
     return dict(
-        org_name=get_setting('org_name', 'My Organization'),
+        org_name=get_setting('org_name', 'Welcome to Quorum! Go to Settings to customize your interface.'),
         org_logo=get_setting('org_logo', None),
         theme_color=get_setting('theme_color', '#0d6efd'),
         github_link=get_setting('github_link', 'https://github.com/felexion/quorum'),
-        app_version="0.1",
-        app_author="Rexvictor"
+            app_version="BETA",
+        app_author="Luis Philip Bentoso (felexion)"
     )
 
 # --- ROUTES ---
@@ -135,7 +152,8 @@ def inject_settings():
 def home():
     ongoing_meetings = Meeting.query.filter_by(status='Ongoing').order_by(Meeting.date.desc()).all()
     finished_meetings = Meeting.query.filter_by(status='Finished').order_by(Meeting.date.desc()).all()
-    return render_template('home.html', ongoing=ongoing_meetings, finished=finished_meetings)
+    member_count = Member.query.count()
+    return render_template('home.html', ongoing=ongoing_meetings, finished=finished_meetings, member_count=member_count)
 
 @app.route('/members')
 def members():
@@ -145,10 +163,15 @@ def members():
 
 @app.route('/members/add', methods=['POST'])
 def add_member():
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
+    first_name = (request.form.get('first_name') or '').strip()
+    last_name = (request.form.get('last_name') or '').strip()
     primary_role = request.form.get('primary_role')
     secondary_role = request.form.get('secondary_role')
+
+    if not first_name or not last_name:
+        flash('First and last name are required to add a member.', 'warning')
+        return redirect(url_for('members'))
+
     new_member = Member(first_name=first_name, last_name=last_name, primary_role=primary_role, secondary_role=secondary_role)
     db.session.add(new_member)
     db.session.commit()
@@ -172,17 +195,14 @@ def settings():
 
 @app.route('/settings/update_app', methods=['POST'])
 def update_app_settings():
-    name = request.form.get('org_name')
+    name = (request.form.get('org_name') or '').strip()
     theme = request.form.get('theme_color')
 
-    for key, val in [('org_name', name), ('theme_color', theme)]:
-        setting = db.session.get(AppSetting, key)
-        
-        if not setting:
-            setting = AppSetting(key=key, value=val)
-            db.session.add(setting)
-        else:
-            setting.value = val
+    if name:
+        set_setting('org_name', name)
+
+    if theme:
+        set_setting('theme_color', theme)
 
     if 'org_logo' in request.files:
         file = request.files['org_logo']
@@ -190,12 +210,7 @@ def update_app_settings():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-            logo_setting = db.session.get(AppSetting, 'org_logo')
-            
-            if not logo_setting:
-                db.session.add(AppSetting(key='org_logo', value=filename))
-            else:
-                logo_setting.value = filename
+            set_setting('org_logo', filename)
 
     db.session.commit()
     return redirect(url_for('settings'))
@@ -207,7 +222,7 @@ def meetings():
 
 @app.route('/meetings/add', methods=['POST'])
 def add_meeting():
-    title = request.form.get('title')
+    title = (request.form.get('title') or '').strip()
     meeting_type = request.form.get('meeting_type')
     location = request.form.get('location')
     quorum_req = request.form.get('quorum_required')
@@ -215,11 +230,12 @@ def add_meeting():
     
     # Handle Agenda Input (Split by new lines)
     agenda_text = request.form.get('initial_agenda')
-    
-    try:
-        meeting_date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
-    except ValueError:
-        meeting_date = datetime.now()
+
+    if not title:
+        flash('Meeting title is required to create a meeting.', 'warning')
+        return redirect(url_for('meetings'))
+
+    meeting_date = parse_meeting_date(date_str)
 
     new_meeting = Meeting(
         title=title,
@@ -253,11 +269,7 @@ def delete_meeting(id):
 def meeting_details(meeting_id):
     meeting = Meeting.query.get_or_404(meeting_id)
     all_members = Member.query.all()
-    
-    attendance_records = Attendance.query.filter_by(meeting_id=meeting_id).all()
-    attendance_map = {att.member_id: att.status for att in attendance_records}
-    present_count = sum(1 for status in attendance_map.values() if status == 'Present')
-    quorum_met = present_count >= meeting.quorum_required
+    attendance_map, present_count, quorum_met = attendance_summary(meeting_id)
 
     motions = Motion.query.filter_by(meeting_id=meeting_id).all()
     statements = Statement.query.filter_by(meeting_id=meeting_id).order_by(Statement.timestamp.desc()).all()
@@ -372,10 +384,7 @@ def generate_report(meeting_id):
     all_members = Member.query.all()
     
     # Attendance Data
-    attendance_records = Attendance.query.filter_by(meeting_id=meeting_id).all()
-    attendance_map = {att.member_id: att.status for att in attendance_records}
-    present_count = sum(1 for status in attendance_map.values() if status == 'Present')
-    quorum_met = present_count >= meeting.quorum_required
+    attendance_map, present_count, quorum_met = attendance_summary(meeting_id)
     
     # Get all Agenda Items
     agenda_items = AgendaItem.query.filter_by(meeting_id=meeting_id).all()
